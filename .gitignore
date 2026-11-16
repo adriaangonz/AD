@@ -1,0 +1,11 @@
+# Maven / NetBeans / Java
+target/
+build/
+dist/
+nbproject/private/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.DS_Store

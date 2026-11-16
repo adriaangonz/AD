@@ -1,0 +1,80 @@
+-- =====================================================================
+--  Base de datos BIBLIOTECA (versión SQLite)
+--  Adaptación de biblioteca.sql (MySQL). La base de datos es el propio
+--  fichero biblioteca.db: no hay CREATE DATABASE ni USE.
+-- =====================================================================
+
+-- Las claves ajenas solo se comprueban si se activan en cada conexión
+PRAGMA foreign_keys = ON;
+
+DROP TABLE IF EXISTS prestamos;
+DROP TABLE IF EXISTS libros;
+DROP TABLE IF EXISTS socios;
+
+CREATE TABLE socios (
+    id_socio       TEXT     PRIMARY KEY,
+    nombre         TEXT     NOT NULL,
+    email          TEXT     UNIQUE,
+    num_prestamos  INTEGER  NOT NULL DEFAULT 0      -- préstamos realizados (histórico)
+);
+
+CREATE TABLE libros (
+    num_libro      INTEGER  PRIMARY KEY,            -- se genera automáticamente
+    titulo         TEXT     NOT NULL UNIQUE,
+    autor          TEXT     NOT NULL,
+    ejemplares     INTEGER  NOT NULL,
+    disponibles    INTEGER  NOT NULL,
+    CHECK (disponibles BETWEEN 0 AND ejemplares)
+);
+
+CREATE TABLE prestamos (
+    id_prestamo       INTEGER  PRIMARY KEY,
+    fecha             TEXT     NOT NULL,            -- 'AAAA-MM-DD'
+    socio             TEXT     NOT NULL REFERENCES socios (id_socio),
+    libro             INTEGER  NOT NULL REFERENCES libros (num_libro),
+    fecha_devolucion  TEXT                          -- NULL = libro aún no devuelto
+);
+
+-- ---------------------------------------------------------------------
+--  Datos de ejemplo
+-- ---------------------------------------------------------------------
+
+INSERT INTO socios (id_socio, nombre, email, num_prestamos) VALUES
+    ('S001', 'Ana García',  'ana.garcia@correo.es',  2),
+    ('S002', 'Luis Pérez',  'luis.perez@correo.es',  1),
+    ('S003', 'Marta Ruiz',  'marta.ruiz@correo.es',  1),
+    ('S004', 'Javier Sanz', 'javier.sanz@correo.es', 0);
+
+INSERT INTO libros (titulo, autor, ejemplares, disponibles) VALUES
+    ('La Regenta',          'Leopoldo Alas «Clarín»', 3, 2),
+    ('Niebla',              'Miguel de Unamuno',      2, 2),
+    ('Fortunata y Jacinta', 'Benito Pérez Galdós',    2, 1),
+    ('Luces de bohemia',    'Ramón del Valle-Inclán', 1, 0),
+    ('Platero y yo',        'Juan Ramón Jiménez',     4, 4),
+    ('Campos de Castilla',  'Antonio Machado',        2, 2);
+
+INSERT INTO prestamos (fecha, socio, libro, fecha_devolucion) VALUES
+    ('2026-09-15', 'S002', 2, '2026-09-29'),   -- ya devuelto
+    ('2026-10-01', 'S001', 1, NULL),
+    ('2026-10-05', 'S001', 4, NULL),
+    ('2026-10-08', 'S003', 3, NULL);
+
+-- ---------------------------------------------------------------------
+--  SQLite no tiene procedimientos ni funciones almacenadas.
+--  prestar, libros_disponibles y prestamos_activos se sustituyen por
+--  sentencias SQL que, más adelante, lanzará el programa Java.
+-- ---------------------------------------------------------------------
+
+-- prestar('S002', 'Niebla'): tres modificaciones en una transacción
+-- BEGIN TRANSACTION;
+-- INSERT INTO prestamos (fecha, socio, libro)
+--     SELECT date('now'), 'S002', num_libro FROM libros WHERE titulo = 'Niebla';
+-- UPDATE libros SET disponibles = disponibles - 1 WHERE titulo = 'Niebla';
+-- UPDATE socios SET num_prestamos = num_prestamos + 1 WHERE id_socio = 'S002';
+-- COMMIT;
+
+-- libros_disponibles('Niebla')
+-- SELECT disponibles FROM libros WHERE titulo = 'Niebla';
+
+-- prestamos_activos('S001')
+-- SELECT COUNT(*) FROM prestamos WHERE socio = 'S001' AND fecha_devolucion IS NULL;
