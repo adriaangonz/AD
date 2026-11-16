@@ -25,7 +25,8 @@ public class GestorBD {
         List<Personaje> lista = new ArrayList<>();
         try (Statement st = ConexionBD.getConexion().createStatement(); ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
-                Personaje p = new Personaje(rs.getInt("id"), rs.getString("name"), rs.getString("powers"), rs.getString("company"), rs.getString("origin"), rs.getInt("isHeroe"));
+                boolean esHeroe = rs.getInt("isHeroe") ==1;
+                Personaje p = new Personaje(rs.getInt("id"), rs.getString("name"), rs.getString("powers"), rs.getString("company"), rs.getString("origin"), esHeroe);
                 lista.add(p);
             }
         }
@@ -58,14 +59,14 @@ public class GestorBD {
         return lista;
     }
 
-    public boolean insertarPersonaje(String nombre, String poderes, String compania, String origen, int isHeroe) throws SQLException {
+    public boolean insertarPersonaje(String nombre, String poderes, String compania, String origen, boolean isHeroe) throws SQLException {
         String sql = "INSERT INTO characters (name, powers, company, origin, isHeroe) VALUES (?, ?, ?, ?, ?)";
         try (Connection con = ConexionBD.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, nombre);
             ps.setString(2, poderes);
             ps.setString(3, compania);
             ps.setString(4, origen);
-            ps.setInt(5, isHeroe);
+            ps.setInt(5, isHeroe ? 1 : 0);
             return ps.executeUpdate() > 0;
         }
     }

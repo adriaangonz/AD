@@ -14,9 +14,9 @@ public class Personaje {
     private String powers;
     private String company;
     private String origin;
-    private int isHeroe;
+    private boolean isHeroe;
 
-    public Personaje(int id, String name, String powers, String company, String origin, int isHeroe) {
+    public Personaje(int id, String name, String powers, String company, String origin, boolean isHeroe) {
         this.id = id;
         this.name = name;
         this.powers = powers;
@@ -24,6 +24,15 @@ public class Personaje {
         this.origin = origin;
         this.isHeroe = isHeroe;
     }
+
+    public Personaje(String name, String powers, String company, String origin, boolean isHeroe) {
+        this.name = name;
+        this.powers = powers;
+        this.company = company;
+        this.origin = origin;
+        this.isHeroe = isHeroe;
+    }
+    
 
     public int getId() {
         return id;
@@ -45,8 +54,13 @@ public class Personaje {
         return origin;
     }
 
-    public int getIsHeroe() {
+    public boolean getIsHeroe() {
         return isHeroe;
+    }
+
+    @Override
+    public String toString() {
+        return "Personaje{" + "id=" + id + ", name=" + name + ", powers=" + powers + ", company=" + company + ", origin=" + origin + ", isHeroe=" + isHeroe + '}';
     }
     
     

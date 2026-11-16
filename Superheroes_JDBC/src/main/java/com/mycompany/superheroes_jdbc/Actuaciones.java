@@ -25,6 +25,14 @@ public class Actuaciones {
         this.actor = actor;
     }
 
+    public Actuaciones(int characterId, int movieId, Integer minutesInMovie, boolean mainCharacter, String actor) {
+        this.characterId = characterId;
+        this.movieId = movieId;
+        this.minutesInMovie = minutesInMovie;
+        this.mainCharacter = mainCharacter;
+        this.actor = actor;
+    }
+
     public int getId() {
         return id;
     }

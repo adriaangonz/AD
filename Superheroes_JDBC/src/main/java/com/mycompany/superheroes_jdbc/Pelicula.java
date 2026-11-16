@@ -11,12 +11,19 @@ package com.mycompany.superheroes_jdbc;
 public class Pelicula {
     private int id;
     private String title;
-    private int duration;
-    private int year;
+    private Integer duration;
+    private Integer year;
     private String producer;
 
-    public Pelicula(int id, String title, int duration, int year, String producer) {
+    public Pelicula(int id, String title, Integer duration, Integer year, String producer) {
         this.id = id;
+        this.title = title;
+        this.duration = duration;
+        this.year = year;
+        this.producer = producer;
+    }
+
+    public Pelicula(String title, Integer duration, Integer year, String producer) {
         this.title = title;
         this.duration = duration;
         this.year = year;
@@ -31,11 +38,11 @@ public class Pelicula {
         return title;
     }
 
-    public int getDuration() {
+    public Integer getDuration() {
         return duration;
     }
 
-    public int getYear() {
+    public Integer getYear() {
         return year;
     }
 

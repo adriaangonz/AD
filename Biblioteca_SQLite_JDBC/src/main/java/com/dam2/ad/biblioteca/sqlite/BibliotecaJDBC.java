@@ -11,25 +11,23 @@ import java.time.LocalDate;
 import java.util.Scanner;
 
 /**
- * Programa principal y coleccion de metodos para la gestion de la biblioteca en SQLite con JDBC.
- * 
- * Contiene la resolucion de:
- * - Metodos base del enunciado: activarClavesAjenas, consultarLibros, insertarSocio,
- *   buscarSocio, buscarSocioInseguro, contarPrestamosActivos, prestar.
- * - Actividad 2: explicacion y manejo de restricciones duplicadas y CHECKs.
- * - Actividad 4: insercion interactiva por teclado con validacion y manejo de NULL.
- * - Actividad 5: prestamos pendientes por socio con INNER JOIN y agrupacion visual.
- * - Actividad 6: devolucion transaccional de prestamos con rollback y actualizacion de stock.
+ * Programa principal y coleccion de metodos para la gestion de la biblioteca en
+ * SQLite con JDBC.
+ *
+ * Contiene la resolucion de: - Metodos base del enunciado: activarClavesAjenas,
+ * consultarLibros, insertarSocio, buscarSocio, buscarSocioInseguro,
+ * contarPrestamosActivos, prestar. - Actividad 2: explicacion y manejo de
+ * restricciones duplicadas y CHECKs. - Actividad 4: insercion interactiva por
+ * teclado con validacion y manejo de NULL. - Actividad 5: prestamos pendientes
+ * por socio con INNER JOIN y agrupacion visual. - Actividad 6: devolucion
+ * transaccional de prestamos con rollback y actualizacion de stock.
  */
 public class BibliotecaJDBC {
 
-    // =========================================================================
-    // METODOS BASE DEL GUION
-    // =========================================================================
-
     /**
-     * Activa la comprobacion de claves ajenas en SQLite para la conexion actual.
-     * En SQLite debe ejecutarse en cada conexion porque por defecto estan deshabilitadas.
+     * Activa la comprobacion de claves ajenas en SQLite para la conexion
+     * actual. En SQLite debe ejecutarse en cada conexion porque por defecto
+     * estan deshabilitadas.
      */
     public static void activarClavesAjenas(Connection con) throws SQLException {
         try (Statement st = con.createStatement()) {
@@ -46,8 +44,7 @@ public class BibliotecaJDBC {
         System.out.printf("%-4s | %-25s | %-20s | %-10s | %-11s%n", "NUM", "TITULO", "AUTOR", "EJEMPLARES", "DISPONIBLES");
         System.out.println("-------------------------------------------------------------------------------");
 
-        try (Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+        try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 
             while (rs.next()) {
                 System.out.printf("%-4d | %-25s | %-20s | %-10d | %-11d%n",
@@ -62,8 +59,8 @@ public class BibliotecaJDBC {
     }
 
     /**
-     * Inserta un socio con PreparedStatement.
-     * Si el email es null o vacio, se inserta como NULL en la base de datos (Types.VARCHAR).
+     * Inserta un socio con PreparedStatement. Si el email es null o vacio, se
+     * inserta como NULL en la base de datos (Types.VARCHAR).
      */
     public static void insertarSocio(Connection con, String id, String nombre, String email) throws SQLException {
         String sql = "INSERT INTO socios (id_socio, nombre, email, num_prestamos) VALUES (?, ?, ?, 0)";
@@ -75,13 +72,17 @@ public class BibliotecaJDBC {
             } else {
                 ps.setString(3, email.trim());
             }
-            ps.executeUpdate();
-            System.out.printf("[OK] Socio insertado correctamente: %s (%s)%n", nombre, id);
+            int n = ps.executeUpdate();
+            System.out.println("FIlas insertadas: " + n);
+            System.out.println("Socio insertado correctamente");
+        } catch (SQLException e) {
+            System.out.println(e.toString());
         }
     }
 
     /**
-     * Busca un socio de forma SEGURA usando PreparedStatement para evitar SQL Injection.
+     * Busca un socio de forma SEGURA usando PreparedStatement para evitar SQL
+     * Injection.
      */
     public static void buscarSocio(Connection con, String nombre) throws SQLException {
         String sql = "SELECT id_socio, nombre, email, num_prestamos FROM socios WHERE nombre = ?";
@@ -99,13 +100,13 @@ public class BibliotecaJDBC {
     }
 
     /**
-     * Demostracion de busqueda INSEGURA concatenando strings (vulnerable a inyeccion SQL).
+     * Demostracion de busqueda INSEGURA concatenando strings (vulnerable a
+     * inyeccion SQL).
      */
     public static void buscarSocioInseguro(Connection con, String nombre) throws SQLException {
         // VULNERABLE: concatenacion directa de parametros en la sentencia SQL
         String sql = "SELECT id_socio, nombre, email, num_prestamos FROM socios WHERE nombre = '" + nombre + "'";
-        try (Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+        try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
             if (rs.next()) {
                 System.out.printf("[BUSQUEDA INSEGURA] Encontrado: %s (%s)%n", rs.getString("nombre"), rs.getString("id_socio"));
             } else {
@@ -115,27 +116,28 @@ public class BibliotecaJDBC {
     }
 
     /**
-     * Devuelve cuantos libros tiene un socio sin devolver (fecha_devolucion IS NULL).
+     * Devuelve cuantos libros tiene un socio sin devolver (fecha_devolucion IS
+     * NULL).
      */
     public static int contarPrestamosActivos(Connection con, String idSocio) throws SQLException {
         String sql = "SELECT COUNT(*) FROM prestamos WHERE socio = ? AND fecha_devolucion IS NULL";
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, idSocio);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
+                rs.next();
+                return rs.getInt(1);
             }
+        } catch (SQLException e) {
+            System.out.println(e.toString());
+            return -1;
         }
-        return 0;
     }
 
     /**
-     * Registra un prestamo dentro de una transaccion ACID:
-     * 1. Comprueba disponibilidad del libro.
-     * 2. Inserta el prestamo en 'prestamos'.
-     * 3. Descuenta 1 disponible en 'libros' (falla por CHECK si disponibles llega a < 0).
-     * 4. Incrementa en 1 num_prestamos en 'socios'.
+     * Registra un prestamo dentro de una transaccion ACID: 1. Comprueba
+     * disponibilidad del libro. 2. Inserta el prestamo en 'prestamos'. 3.
+     * Descuenta 1 disponible en 'libros' (falla por CHECK si disponibles llega
+     * a < 0). 4. Incrementa en 1 num_prestamos en 'socios'.
      */
     public static boolean prestar(Connection con, String idSocio, String tituloLibro) throws SQLException {
         boolean autoCommitOriginal = con.getAutoCommit();
@@ -146,10 +148,7 @@ public class BibliotecaJDBC {
         String sqlUpdateLibro = "UPDATE libros SET disponibles = disponibles - 1 WHERE num_libro = ?";
         String sqlUpdateSocio = "UPDATE socios SET num_prestamos = num_prestamos + 1 WHERE id_socio = ?";
 
-        try (PreparedStatement psBuscar = con.prepareStatement(sqlBuscarLibro);
-             PreparedStatement psInsert = con.prepareStatement(sqlInsertPrestamo);
-             PreparedStatement psUpdLibro = con.prepareStatement(sqlUpdateLibro);
-             PreparedStatement psUpdSocio = con.prepareStatement(sqlUpdateSocio)) {
+        try (PreparedStatement psBuscar = con.prepareStatement(sqlBuscarLibro); PreparedStatement psInsert = con.prepareStatement(sqlInsertPrestamo); PreparedStatement psUpdLibro = con.prepareStatement(sqlUpdateLibro); PreparedStatement psUpdSocio = con.prepareStatement(sqlUpdateSocio)) {
 
             // 1. Localizar el libro
             psBuscar.setString(1, tituloLibro);
@@ -185,7 +184,7 @@ public class BibliotecaJDBC {
             psUpdSocio.setString(1, idSocio);
             psUpdSocio.executeUpdate();
 
-            con.commit(); // Confirmar transaccion
+            con.commit(); 
             System.out.printf("[OK PRESTAMO] Prestamo registrado: Libro '%s' a socio '%s'.%n", tituloLibro, idSocio);
             return true;
 
@@ -201,17 +200,14 @@ public class BibliotecaJDBC {
     // =========================================================================
     // ACTIVIDAD 5: PRESTAMOS PENDIENTES POR SOCIO
     // =========================================================================
-
     /**
-     * Muestra, para cada socio, los titulos que tiene sin devolver (INNER JOIN).
-     * El nombre de cada socio aparece una sola vez con sus titulos indentados debajo.
-     * 
-     * Formato esperado:
-     * Ana García (S001):
-     *   La Regenta (desde 2026-10-01)
-     *   Luces de bohemia (desde 2026-10-05)
-     * Marta Ruiz (S003):
-     *   Fortunata y Jacinta (desde 2026-10-08)
+     * Muestra, para cada socio, los titulos que tiene sin devolver (INNER
+     * JOIN). El nombre de cada socio aparece una sola vez con sus titulos
+     * indentados debajo.
+     *
+     * Formato esperado: Ana García (S001): La Regenta (desde 2026-10-01) Luces
+     * de bohemia (desde 2026-10-05) Marta Ruiz (S003): Fortunata y Jacinta
+     * (desde 2026-10-08)
      */
     public static void prestamosPendientesPorSocio(Connection con) throws SQLException {
         String sql = """
@@ -225,8 +221,7 @@ public class BibliotecaJDBC {
 
         System.out.println("\n--- ACTIVIDAD 5: PRESTAMOS PENDIENTES POR SOCIO (INNER JOIN) ---");
 
-        try (Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+        try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 
             String socioActual = "";
             boolean hayResultados = false;
@@ -253,8 +248,8 @@ public class BibliotecaJDBC {
     }
 
     /**
-     * Ampliacion de la Actividad 5: usa LEFT JOIN para incluir tambien a los socios
-     * que no tienen ningun libro pendiente.
+     * Ampliacion de la Actividad 5: usa LEFT JOIN para incluir tambien a los
+     * socios que no tienen ningun libro pendiente.
      */
     public static void todosLosSociosConPrestamosPendientes(Connection con) throws SQLException {
         String sql = """
@@ -267,8 +262,7 @@ public class BibliotecaJDBC {
 
         System.out.println("\n--- AMPLIACION ACTIVIDAD 5: TODOS LOS SOCIOS (LEFT JOIN) ---");
 
-        try (Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+        try (Statement st = con.createStatement(); ResultSet rs = st.executeQuery(sql)) {
 
             String socioActual = "";
 
@@ -295,16 +289,15 @@ public class BibliotecaJDBC {
     // =========================================================================
     // ACTIVIDAD 6: DEVOLVER UN PRESTAMO
     // =========================================================================
-
     /**
-     * Devuelve un prestamo en una transaccion:
-     * 1. Actualiza fecha_devolucion = DATE('now') en prestamos para el id_prestamo dado
-     *    siempre que fecha_devolucion IS NULL.
-     * 2. Si executeUpdate() devuelve 0 (el prestamo no existe o ya estaba devuelto):
-     *    hace rollback() e informa con: "Devolucion cancelada: El prestamo X no existe o ya esta devuelto".
-     * 3. Si actualizo la fila (filas = 1):
-     *    Suma 1 a los disponibles del libro asociado y confirma la transaccion (commit).
-     *    Informa con: "Prestamo X devuelto".
+     * Devuelve un prestamo en una transaccion: 1. Actualiza fecha_devolucion =
+     * DATE('now') en prestamos para el id_prestamo dado siempre que
+     * fecha_devolucion IS NULL. 2. Si executeUpdate() devuelve 0 (el prestamo
+     * no existe o ya estaba devuelto): hace rollback() e informa con:
+     * "Devolucion cancelada: El prestamo X no existe o ya esta devuelto". 3. Si
+     * actualizo la fila (filas = 1): Suma 1 a los disponibles del libro
+     * asociado y confirma la transaccion (commit). Informa con: "Prestamo X
+     * devuelto".
      */
     public static boolean devolver(Connection con, int idPrestamo) throws SQLException {
         boolean autoCommitOriginal = con.getAutoCommit();
@@ -319,9 +312,7 @@ public class BibliotecaJDBC {
         String sqlObtenerLibro = "SELECT libro FROM prestamos WHERE id_prestamo = ?";
         String sqlSumarStock = "UPDATE libros SET disponibles = disponibles + 1 WHERE num_libro = ?";
 
-        try (PreparedStatement psDevolver = con.prepareStatement(sqlDevolver);
-             PreparedStatement psLibro = con.prepareStatement(sqlObtenerLibro);
-             PreparedStatement psSumar = con.prepareStatement(sqlSumarStock)) {
+        try (PreparedStatement psDevolver = con.prepareStatement(sqlDevolver); PreparedStatement psLibro = con.prepareStatement(sqlObtenerLibro); PreparedStatement psSumar = con.prepareStatement(sqlSumarStock)) {
 
             psDevolver.setInt(1, idPrestamo);
             int filasAfectadas = psDevolver.executeUpdate();
@@ -363,7 +354,6 @@ public class BibliotecaJDBC {
     // =========================================================================
     // ACTIVIDAD 4: PEDIR DATOS POR TECLADO
     // =========================================================================
-
     public static void pedirDatosSocioTeclado(Connection con, Scanner scanner) {
         System.out.println("\n--- ACTIVIDAD 4: ALTA INTERACTIVA DE SOCIO ---");
         System.out.print("Introduce el codigo del socio (obligatorio, ej. S005): ");
@@ -397,7 +387,6 @@ public class BibliotecaJDBC {
     // =========================================================================
     // PROGRAMA PRINCIPAL
     // =========================================================================
-
     public static void main(String[] args) {
         System.out.println("==================================================");
         System.out.println("   BIBLIOTECA SQLITE CON JDBC (ACTIVIDADES 1 A 6) ");
