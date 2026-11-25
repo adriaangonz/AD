@@ -5,6 +5,7 @@
 package com.mycompany.examenrepaso_jdbc;
 
 import com.mycompany.ej1.GestorEj1;
+import com.mycompany.ej2.Main2;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -38,8 +39,8 @@ public class Main {
             try {
                 int opcion = Integer.parseInt(teclado.nextLine());
                 switch (opcion) {
-                    case 1 ->
-                        ejecutarOpcion1(gestor1, teclado);
+                    case 1 -> ejecutarOpcion1(gestor1, teclado);
+                    case 2 -> Main2.main(teclado);
                     case 4 -> {
                         salir = true;
                         System.out.println("saliendo");
