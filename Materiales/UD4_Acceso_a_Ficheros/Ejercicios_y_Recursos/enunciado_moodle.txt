@@ -1,0 +1,291 @@
+PRUEBA PRÁCTICA RA1 · ACCESO A DATOS (DAM2)
+Ficheros de texto y XML con JAXB
+======================================================================
+
+Indicaciones generales
+
+- La prueba tiene dos ejercicios independientes. Cada uno se entrega en
+  su propio proyecto Maven de NetBeans.
+
+
+
+======================================================================
+EJERCICIO 1. LECTURA Y ALMACENAMIENTO EN FICHEROS DE TEXTO
+======================================================================
+
+Una red de estaciones meteorológicas de Cantabria envía cada día sus
+observaciones en un fichero CSV codificado en UTF-8:
+
+    fecha;estacion;nombre;tmax;tmin;precipitacion;estado
+    2026-10-01;SAN;Santander;19.2;12.4;3.5;P
+    2026-10-01;REI;Reinosa;14.8;4.1;;V
+    2026-10-02;SAN;Santander;17.6;11.9;12.0;V
+
+Campos:
+
+    fecha          Día de la observación, en formato aaaa-mm-dd
+    estacion       Código de la estación, de 3 letras
+    nombre         Nombre de la estación
+    tmax, tmin     Temperaturas máxima y mínima del día, en °C
+    precipitacion  Precipitación del día en mm. Vacía si no hay dato
+    estado         P si el dato es provisional, V si está validado
+
+La primera línea es la cabecera. Una observación se identifica por su
+estación y su fecha.
+
+El programa recibe como argumento la ruta del fichero CSV que debe
+procesar.
+
+Ficheros que se entregan: observaciones.csv y observaciones2.csv.
+
+----------------------------------------------------------------------
+1.1
+----------------------------------------------------------------------
+Si no existe el directorio datos/estaciones/, créalo. Muestra el tamaño
+en bytes y la fecha de última modificación del fichero recibido. Si el
+fichero no existe, informa y termina.
+
+----------------------------------------------------------------------
+1.2
+----------------------------------------------------------------------
+Lee el fichero y crea un objeto Observacion por cada línea válida,
+guardándolos en una List<Observacion>. Una línea es inválida si:
+
+  - no tiene exactamente 7 campos;
+  - la fecha no tiene un formato válido (aaaa-mm-dd);
+  - el código de estación no está formado por 3 letras mayúsculas;
+  - alguna temperatura no es numérica o está fuera del rango de
+    -30 °C a 50 °C;
+  - la temperatura mínima es mayor que la máxima;
+  - la precipitación no está vacía y no es un número mayor o igual
+    que 0;
+  - el estado no es P ni V.
+
+Las líneas vacías se ignoran. Cada línea inválida se registra al final
+de datos/errores.log indicando el fichero, el número de línea y el
+motivo. Por ejemplo:
+
+    observaciones.csv | línea 6 | Temperatura mínima mayor que la máxima
+
+----------------------------------------------------------------------
+1.3
+----------------------------------------------------------------------
+A partir de la lista anterior, escribe un fichero por estación en
+datos/estaciones/ con el nombre <codigoEstacion>.txt, por ejemplo
+SAN.txt.
+
+  - La primera línea es una cabecera con el código, el nombre de la
+    estación y el número de observaciones.
+  - Después, una línea por observación, ordenadas por fecha, sin el
+    código ni el nombre.
+  - Si no hay dato de precipitación, se escribe un guion (-).
+
+    SAN|Santander|3
+    2026-10-01|19.2|12.4|3.5|P
+    2026-10-02|17.6|11.9|12.0|V
+    2026-10-03|16.1|10.8|-|P
+
+Si el fichero ya existe, se sobrescribe.
+
+----------------------------------------------------------------------
+1.4
+----------------------------------------------------------------------
+Modifica el programa para que, si el fichero de una estación ya existe,
+no se sobrescriba. En su lugar, léelo, reconstruye sus observaciones en
+una lista y combínala con las observaciones nuevas de esa estación. Dos
+observaciones tienen los mismos valores si coinciden sus temperaturas y
+su precipitación.
+
+    Observación almacenada   Observación nueva          Resultado
+    para esa fecha
+    ----------------------   ------------------------   -----------------
+    No hay ninguna           -                          Se AÑADE
+    Validada (V)             Con los mismos valores     Se IGNORA
+    Validada (V)             Con valores distintos      CONFLICTO: se
+                                                        mantiene la
+                                                        almacenada y se
+                                                        registra en
+                                                        errores.log
+    Provisional (P)          Idéntica, también en el    Se IGNORA
+                             estado
+    Provisional (P)          En cualquier otro caso     Se ACTUALIZA: se
+                                                        sustituye por la
+                                                        nueva
+
+Después, reescribe el fichero de la estación con el formato del
+apartado 1.3, ordenado por fecha y con la cabecera actualizada.
+
+Al terminar, muestra cuántas observaciones se han añadido, actualizado,
+ignorado y rechazado por conflicto. Por ejemplo:
+
+    Añadidas: 4 | Actualizadas: 2 | Ignoradas: 1 | Conflictos: 1
+
+El conflicto se registra con este formato:
+
+    observaciones2.csv | línea 5 | Conflicto: SAN 2026-10-02 ya validada con otros valores
+
+Comprueba el funcionamiento ejecutando el programa primero con
+observaciones.csv y después con observaciones2.csv.
+
+----------------------------------------------------------------------
+1.5
+----------------------------------------------------------------------
+En un comentario en el enunciado entregado, responde brevemente
+(2 o 3 líneas cada una):
+
+a) En el apartado 1.4, aunque solo cambie una observación, has tenido
+   que reescribir el fichero completo de la estación. ¿Por qué?
+
+b) Fíjate en las líneas que escribes en el 1.3. ¿Ocupan todas lo mismo?
+   ¿Por qué eso impide saltar directamente a la observación de una
+   fecha concreta sin leer las anteriores?
+
+
+======================================================================
+EJERCICIO 2. CONVERSIÓN A XML CON JAXB
+======================================================================
+
+Este ejercicio es independiente del ejercicio 1. Se entregan:
+
+  - estaciones.xml: la red de estaciones;
+  - estaciones_original.xml: copia de estaciones.xml, para restaurarlo
+    antes de cada prueba;
+  - estaciones_nuevas.csv: estaciones que hay que añadir;
+  - observaciones_octubre.csv: observaciones del mes, con el formato del
+    ejercicio 1 y sin líneas erróneas;
+  - un proyecto Maven con las dependencias de JAXB y JUnit.
+
+El fichero estaciones.xml tiene esta estructura:
+
+    <red nombre="Red de Cantabria">
+        <estacion codigo="SAN">
+            <nombre>Santander</nombre>
+            <altitud>5</altitud>
+            <resumen>
+                <observaciones>31</observaciones>
+                <tmedia>16.2</tmedia>
+                <precipitacion>118.4</precipitacion>
+            </resumen>
+        </estacion>
+        <estacion codigo="REI">
+            <nombre>Reinosa</nombre>
+            <altitud>850</altitud>
+        </estacion>
+        ...
+    </red>
+
+La altitud es un número entero. El elemento <resumen> es opcional:
+algunas estaciones no lo tienen.
+
+----------------------------------------------------------------------
+2.1
+----------------------------------------------------------------------
+Crea las clases Red, Estacion y Resumen con las anotaciones de JAXB
+necesarias para representar el fichero: el nombre de la red y el código
+de la estación son atributos, y el resumen es un elemento anidado
+dentro de la estación.
+
+Carga estaciones.xml con un Unmarshaller y muestra cada estación con
+este formato:
+
+    SAN - Santander (5 m) | 31 observaciones | 16.2 °C | 118.4 mm
+    REI - Reinosa (850 m) | Sin resumen
+
+Si el fichero no existe o se produce una JAXBException, informa del
+error sin que el programa termine de forma brusca.
+
+----------------------------------------------------------------------
+2.2
+----------------------------------------------------------------------
+Añade a la clase Red los métodos:
+
+    boolean existe(String codigo)
+    boolean addSiNoExiste(Estacion e)
+
+addSiNoExiste añade la estación solo si no hay otra con el mismo
+código, y devuelve true si la ha añadido.
+
+Lee estaciones_nuevas.csv (formato codigo;nombre;altitud, con
+cabecera) y añade a la red las estaciones que no existan, sin resumen.
+Informa por consola de cada línea: estación añadida, estación que ya
+existe o línea no válida, indicando el motivo. Una línea errónea no
+debe detener el programa.
+
+Guarda la red en estaciones.xml con un Marshaller y la salida
+formateada. Las estaciones nuevas no deben tener un elemento <resumen>
+vacío.
+
+----------------------------------------------------------------------
+2.3
+----------------------------------------------------------------------
+Añade a la clase Red el método:
+
+    List<Estacion> conPrecipitacionMayorQue(double mm)
+
+que devuelve las estaciones cuya precipitación en el resumen supera ese
+valor. Las estaciones sin resumen no se incluyen.
+
+Pide al usuario un valor por teclado y muestra las estaciones que lo
+superan, ordenadas de mayor a menor precipitación. Si el valor
+introducido no es un número, vuelve a pedirlo. Si ninguna estación lo
+supera, muéstralo con un mensaje.
+
+----------------------------------------------------------------------
+2.4
+----------------------------------------------------------------------
+A partir de observaciones_octubre.csv, sustituye el resumen de cada
+estación que tenga observaciones en el fichero:
+
+  - observaciones: número de observaciones de la estación;
+  - tmedia: media de (tmax + tmin) / 2 de todas sus observaciones,
+    redondeada a 1 decimal;
+  - precipitacion: suma de las precipitaciones con dato, o 0 si no hay
+    ninguna.
+
+Añade además a cada una de esas estaciones un elemento <diario> con un
+elemento <dia> por observación, ordenados por fecha. La fecha es un
+atributo de tipo String; si no hay dato de precipitación, ese elemento
+no aparece:
+
+    <diario>
+        <dia fecha="2026-10-01">
+            <tmax>18.1</tmax>
+            <tmin>11.3</tmin>
+            <precipitacion>3.5</precipitacion>
+        </dia>
+        <dia fecha="2026-10-04">
+            <tmax>17.9</tmax>
+            <tmin>11.6</tmin>
+        </dia>
+    </diario>
+
+Usa @XmlElementWrapper para el elemento <diario>. No es necesario usar
+XmlAdapter.
+
+Las estaciones sin observaciones en el fichero conservan su resumen y
+no tienen diario. Si una observación es de una estación que no está en
+la red, muestra un aviso. Guarda el resultado en estaciones.xml.
+
+----------------------------------------------------------------------
+2.5
+----------------------------------------------------------------------
+Crea la clase de pruebas RedTest con JUnit 5. En un método @BeforeEach,
+prepara una red con 3 estaciones, una de ellas sin resumen.
+
+Escribe estos test de la clase Red
+  - addSiNoExiste: el caso normal (se añade una estación nueva) y el de 
+  un código repetido (no se añade una estación con código repetido).
+  - conPrecipitacionMayorQue, comprobando que devuelve las estaciones 
+  correctas y que no incluye la estación sin resumen.
+  - Javadoc de las clases y de los métodos públicos de Red, Estacion y
+    Resumen.
+
+2.5.2
+  - Cálculo del resumen: a partir de una lista de observaciones conocida, 
+  comprueba el número de observaciones, la temperatura media y la 
+  `recipitación total. Para ello, el cálculo del apartado 2.4 debe estar 
+  en un método que reciba una lista de observaciones y devuelva un Resumen.
+  - Ida y vuelta: guarda y¡una red en un fichero temporal(@TempDir), vuelve 
+  a leerla y comprueba que no se ha perdido información, incluido el diario 
+  y un día sin dato de precipitaación.
+  Todos los test deben pasar con Test Project en NetBeans.

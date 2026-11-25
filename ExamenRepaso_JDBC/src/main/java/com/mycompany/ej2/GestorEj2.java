@@ -108,4 +108,60 @@ public class GestorEj2 {
         }
         return lista;
     }
+
+    public List<String> listarGruposSinCancion() throws SQLException {
+        List<String> lista = new ArrayList<>();
+        String sql = "SELECT g.nombre AS grupo FROM grupos g LEFT JOIN canciones c ON g.codgrupo = c.grupo WHERE c.grupo IS NULL ORDER BY g.nombre";
+        try (Connection con = ConexionBD.getConexion(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String grupo = rs.getString("grupo");
+                lista.add(grupo);
+            }
+        }
+        return lista;
+    }
+
+    //fecha, usuario, titulo, grupo
+    public List<Voto> listarVotosRecientes() throws SQLException {
+        List<Voto> lista = new ArrayList<>();
+        String sql = "SELECT v.fecha, v.usuario, c.titulo, g.nombre FROM votos v "
+                + "INNER JOIN canciones c ON v.cancion = c.numCancion "
+                + "INNER JOIN grupos g ON c.grupo = g.codgrupo "
+                + "ORDER BY v.fecha DESC, v.usuario LIMIT 5";
+        try (Connection con = ConexionBD.getConexion(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                LocalDate fecha = rs.getObject("fecha", LocalDate.class);
+                String usuario = rs.getString("usuario");
+                String titulo = rs.getString("titulo");
+                String grupo = rs.getString("nombre");
+                Voto v = new Voto(usuario, fecha, titulo, grupo);
+                lista.add(v);
+            }
+        }
+        return lista;
+    }
+
+    //num votos y numcacniones que se eliminan
+    public int[] consultarCuantasElimina(String grupo) throws SQLException {
+        int[] recuento = new int[2];
+        String sql = "SELECT COUNT(DISTINCT c.numCancion) AS numCanciones, "
+                + "COUNT(v.cancion) AS votos FROM grupos g LEFT JOIN canciones c ON "
+                + "g.codgrupo = c.grupo LEFT JOIN votos v ON c.numCancion = "
+                + "v.cancion WHERE g.nombre = ?";
+        try (Connection con = ConexionBD.getConexion(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, grupo);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                recuento[0] = rs.getInt("numCanciones");
+                recuento[1] = rs.getInt("votos");
+            }
+        }
+        return recuento;
+    }
+
+    public void eliminarCanciones() {
+
+    }
 }
