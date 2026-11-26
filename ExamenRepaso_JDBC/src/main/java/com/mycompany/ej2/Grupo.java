@@ -31,6 +31,16 @@ public class Grupo {
         this.compania = compania;
     }
 
+    public Grupo(String nombre, String localidad, int annoGrab, LocalDate fechaEstreno, String compania) {
+        this.nombre = nombre;
+        this.localidad = localidad;
+        this.annoGrab = annoGrab;
+        this.fechaEstreno = fechaEstreno;
+        this.compania = compania;
+    }
+    
+    
+
     public int getCodgrupo() {
         return codgrupo;
     }
