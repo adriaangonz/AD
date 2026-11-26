@@ -1,9 +1,15 @@
 package com.mycompany.practica_batch_callable;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
- * Práctica de Batch, Transacciones, Procedimientos y Funciones con JDBC (BD: biblioteca).
+ * Práctica de Batch, Transacciones, Procedimientos y Funciones con JDBC (BD:
+ * biblioteca).
  *
  * @author adrian
  */
@@ -24,18 +30,68 @@ public class Main {
 
             String op = sc.nextLine().trim();
             switch (op) {
-                case "1" -> insertarEnBatch(sc);
-                case "2" -> llamarPrestar(sc);
-                case "3" -> llamarLibrosDisponibles(sc);
-                case "4" -> llamarPrestamosActivos(sc);
-                case "0" -> salir = true;
-                default -> System.out.println("Opcion no valida.");
+                case "1" ->
+                    insertarEnBatch(sc);
+                case "2" ->
+                    llamarPrestar(sc);
+                case "3" ->
+                    llamarLibrosDisponibles(sc);
+                case "4" ->
+                    llamarPrestamosActivos(sc);
+                case "0" ->
+                    salir = true;
+                default ->
+                    System.out.println("Opcion no valida.");
             }
         }
     }
 
     private static void insertarEnBatch(Scanner sc) {
-        // TODO: setAutoCommit(false), addBatch(), executeBatch(), commit() / rollback()
+        List<Libro> lista = new ArrayList<>();
+        boolean anadir = true;
+        while (anadir) {
+
+            Libro l = new Libro();
+            System.out.println("Introduce el titulo");
+            l.setTitulo(sc.nextLine());
+            System.out.println("Introduce el autor");
+            l.setAutor(sc.nextLine());
+            System.out.println("Introduce el numero de ejemplares");
+            l.setEjemplares(Integer.parseInt(sc.nextLine()));
+            System.out.println("Introduce cuantos hay disponibles");
+            l.setDisponibles(Integer.parseInt(sc.nextLine()));
+            lista.add(l);
+            System.out.println("Quieresañadir otro libro? s/n");
+            if (!sc.nextLine().equalsIgnoreCase("s")) {
+                anadir = false;
+            }
+        }
+        String sql = "INSERT INTO libros (titulo, autor, ejemplares, disponibles) VALUES (?, ?, ?, ?)";
+        try (Connection con = ConexionBD.getConexion()) {
+            con.setAutoCommit(false);
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                for (Libro l : lista) {
+                    ps.setString(1, l.getTitulo());
+                    ps.setString(2, l.getAutor());
+                    ps.setInt(3, l.getEjemplares());
+                    ps.setInt(4, l.getDisponibles());
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+                con.commit();
+                System.out.println("Añadidos " + lista.size() + " libros");
+            } catch (SQLException e) {
+                con.rollback();
+                System.out.println("ERROR EN EL BATCH");
+                if (e.getErrorCode()==1062) {
+                    System.out.println("algun titulo ya existe en la bd");
+                }
+            } finally {
+                con.setAutoCommit(true);
+            }
+        } catch (SQLException ex) {
+            System.getLogger(Main.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
     }
 
     private static void llamarPrestar(Scanner sc) {
