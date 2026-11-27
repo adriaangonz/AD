@@ -91,4 +91,32 @@ public class Reparacion {
         this.id_cliente = id_cliente;
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public String getMatricula() {
+        return matricula;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public LocalDate getFecha_entrada() {
+        return fecha_entrada;
+    }
+
+    public LocalDate getFecha_salida() {
+        return fecha_salida;
+    }
+
+    public BigDecimal getCoste() {
+        return coste;
+    }
+
+    public Integer getId_cliente() {
+        return id_cliente;
+    }
+    
 }

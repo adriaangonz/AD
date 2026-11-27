@@ -47,8 +47,8 @@ public class ConexionBD {
     }
 
     private static String obligatoria(Properties PROPS, String valor) {
-        String texto = valor;
-        if (valor == null || valor.isBlank()) {
+        String texto = PROPS.getProperty(valor);
+        if (texto == null || texto.isBlank()) {
             throw new IllegalStateException("No se encuentra la propiedad: " + texto);
         }
         return texto.trim();
